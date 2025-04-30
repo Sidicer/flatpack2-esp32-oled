@@ -2,18 +2,20 @@
 
 #include "can.h"
 #include "oled.h"
+#include "serialcom.h"
 
 #define OLED_ENABLED true
 OLED oled;
 
 #define CAN_ENABLED true
 CANBus can;
+
+#define SCOM_ENABLED true
+serialCom scom;
+
 bool has_serial = false;
 unsigned long last_login_ms = 0;
-
-#define VOLTAGE_SET_PIN GPIO_NUM_4
-#define TARGET_VOLTAGE_CV 5400
-int VOLTAGE_SET_PIN_STATE = HIGH;
+bool fill_waiting_drawn = false;
 
 void setup() {
   Serial.begin(115200);
@@ -27,11 +29,7 @@ void setup() {
     Serial.println("[FLATPACK2 CONTROLLER][ERROR] CAN failed. Halting...");
     while (1) delay(500);
   }
-  
-  pinMode(VOLTAGE_SET_PIN, INPUT_PULLUP);
-  Serial.print("[FLATPACK2 CONTROLLER][INFO] Configured Voltage Set Pin (GPIO");
-  Serial.print(VOLTAGE_SET_PIN);
-  Serial.println(") with internal pull-up.");
+
 }
 
 void loop() {
@@ -65,34 +63,27 @@ void loop() {
     }
   }
   
-  bool fill_waiting_drawn = false;
   if (OLED_ENABLED && !has_serial && !fill_waiting_drawn) {
     oled.fill_waiting();
     fill_waiting_drawn = true;
   }
-  
-  int pin_reading = digitalRead(VOLTAGE_SET_PIN); 
-  if (pin_reading != VOLTAGE_SET_PIN_STATE) {
-    VOLTAGE_SET_PIN_STATE = pin_reading;
-    
-    if (VOLTAGE_SET_PIN_STATE == LOW) {
-      Serial.print("[MAIN][INFO] Voltage Set Pin (GPIO");
-      Serial.print(VOLTAGE_SET_PIN);
-      Serial.println(") grounded. Sending Set Voltage command.");
-      
-      if (CAN_ENABLED && has_serial) {
-        // Send the set voltage command via CAN
-        // (not later than 5 seconds after loggin in)
-        can.sendLogin();
-        // can.setDefaultVoltage(TARGET_VOLTAGE_CV);
-        can.setOperatingParams(100, 4800, 5400);
-      } else if (!CAN_ENABLED) {
-        Serial.println("[MAIN][WARN] Cannot send Set Voltage: CAN is disabled.");
-      } else { // CAN enabled but no serial yet
-        Serial.println("[MAIN][WARN] Cannot send Set Voltage: PSU Serial/ID not yet known.");
+
+  if (!SCOM_ENABLED) {
+    cmdRx cmd;
+    if (scom.receive(cmd) && cmd.valid) {
+      switch(cmd.type) {
+        case ctfpType::SET_OPERATION:
+          can.sendLogin(); delay(100);
+          can.setOperatingParams(cmd.current, cmd.voltage, cmd.protection);
+          delay(100); can.setDefaultVoltage(cmd.voltage);
+          break;
+        case ctfpType::DEFAULT_VOLTAGE:
+          can.sendLogin(); delay(100);
+          can.setDefaultVoltage(cmd.voltage);
+          break;
       }
     }
   }
-  
+
   delay(100);
 }

@@ -8,7 +8,7 @@ public:
     bool begin();
     void fill_static();
     void fill_waiting();
-    void update_data(int intake_temp, int exhaust_temp, float output_voltage, float output_current, int input_voltage);
+    void update_data(int intake_temp, int exhaust_temp, float output_voltage, float output_current, int input_voltage, String status);
     void clear_data();
 
 private:

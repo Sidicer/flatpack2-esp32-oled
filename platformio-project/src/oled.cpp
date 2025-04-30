@@ -18,6 +18,7 @@ bool OLED::begin() {
 }
 
 void OLED::clear_data() {
+  display.fillRect(70,8,50,8, BLACK);
   // IN[8,32] 00[27.32] °C[40,32] 00.00[70,32] V[101,32]      
   // EX[8,42] 00[27,42] °C[40,42] 00.00[70,42] A[101,42]
   // [ INPUT ][19,56] 000[77,56] V[100,56]
@@ -35,10 +36,9 @@ void OLED::fill_header(){
   display.setTextColor(BLACK, WHITE);
   display.setCursor(1,0);
   display.println(" FLATPACK CONTROLLER ");
-  // Subtitle
   display.setTextColor(WHITE);
-  display.setCursor(34,8);
-  display.println("by Sidicer");
+  display.setCursor(12,10);
+  display.print("Status:");
   display.drawLine(0, 18, SCREEN_WIDTH - 1, 18, WHITE);
 }
 
@@ -75,7 +75,7 @@ void OLED::fill_static() {
   display.display();
 }
 
-void OLED::update_data(int intake_temp, int exhaust_temp, float output_voltage, float output_current, int input_voltage) {
+void OLED::update_data(int intake_temp, int exhaust_temp, float output_voltage, float output_current, int input_voltage, String status) {
   OLED::clear_data();
   // IN[8,32] 00[27.32] °C[40,32] 00.00[70,32] V[101,32]      
   // EX[8,42] 00[27,42] °C[40,42] 00.00[70,42] A[101,42]
@@ -85,6 +85,8 @@ void OLED::update_data(int intake_temp, int exhaust_temp, float output_voltage, 
   display.setCursor(70,32); display.print(output_voltage);
   display.setCursor(70,42); display.print(output_current);
   display.setCursor(77,56); display.print(input_voltage);
+  // [ status ][10,10] Warning[72,10]
+  display.setCursor(72,10); display.print(status);
   display.display();
 }
 

@@ -14,7 +14,11 @@ public:
 
     static constexpr uint32_t TX_LOGIN_BASE           = 0x05004804;
     static constexpr uint32_t TX_DEFAULT_VOLTAGE_BASE = 0x05009C00;
-    static constexpr uint32_t TX_SET_OPERATING_PARAMS = 0x05FF4004; 
+    static constexpr uint32_t TX_SET_OPERATING_PARAMS = 0x05FF4004;
+
+    static constexpr uint16_t DC_MIN_VOLTAGE = 4320;
+    static constexpr uint16_t DC_MAX_VOLTAGE = 5800;
+    static constexpr uint16_t DC_MAX_CURRENT = 625;
 
     bool begin();
     bool receive(twai_message_t& msg);

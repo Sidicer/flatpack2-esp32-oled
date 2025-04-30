@@ -88,6 +88,21 @@ void CANBus::setOperatingParams(uint16_t current_da, uint16_t voltage_cv, uint16
     return;
   }
 
+  if (voltage_cv > this->DC_MAX_VOLTAGE || voltage_cv < this->DC_MIN_VOLTAGE) {
+    Serial.println("[CAN][ERROR] Voltage out of bounds (43.20V - 58.00V)!");
+    return;
+  }
+
+  if (current_da > this->DC_MAX_CURRENT) {
+    current_da = DC_MAX_CURRENT;
+    Serial.println("[CAN][ERROR] Current set too high. Lowering it to 62.5A!");
+  }
+
+  if (ovp_cv > this->DC_MAX_VOLTAGE) {
+    ovp_cv = DC_MAX_VOLTAGE;
+    Serial.println("[CAN][ERROR] Over-voltage protection set too high. Lowering it to 58.00V!");
+  }
+
   twai_message_t msg{};
   msg.identifier = TX_SET_OPERATING_PARAMS; // Use the fixed broadcast ID
   msg.flags = TWAI_MSG_FLAG_EXTD;
@@ -129,6 +144,11 @@ void CANBus::setDefaultVoltage(const uint16_t voltage_cv) {
     return;
   }
 
+  if (voltage_cv > this->DC_MAX_VOLTAGE || voltage_cv < this->DC_MIN_VOLTAGE) {
+    Serial.println("[CAN][ERROR] Voltage out of bounds (43.20V - 58.00V)!");
+    return;
+  }
+
   twai_message_t msg{};
   msg.identifier = TX_DEFAULT_VOLTAGE_BASE | (this->psu_id << 8); // XX is the ID byte
   msg.flags = TWAI_MSG_FLAG_EXTD;
@@ -144,13 +164,13 @@ void CANBus::setDefaultVoltage(const uint16_t voltage_cv) {
 
   // Transmit the message with a 100ms timeout
   if (twai_transmit(&msg, pdMS_TO_TICKS(100)) == ESP_OK) {
-    Serial.print("[CAN][INFO] Set voltage message sent to ID 0x");
+    Serial.print("[CAN][INFO] Set Default Voltage message sent to ID 0x");
     Serial.print(this->psu_id, HEX);
     Serial.print(" (Voltage: ");
     Serial.print(voltage_cv / 100.0);
     Serial.println(" V)");
   } else {
-    Serial.print("[CAN][ERROR] Set voltage message failed for ID 0x");
+    Serial.print("[CAN][ERROR] Set Default Voltage message failed for ID 0x");
     Serial.println(this->psu_id, HEX);
   }
   
@@ -171,17 +191,18 @@ void CANBus::handleStatus(const twai_message_t& msg) {
   float output_voltage = (msg.data[4] << 8 | msg.data[3]) / 100.0;
   int input_voltage = msg.data[6] << 8 | msg.data[5];
   int exhaust_temp = msg.data[7];
+  String current_status = "Unknown";
   
   switch (status_code) {
-    case 0x04: /*Serial.println("State: Normal");*/ break;
-    case 0x08: /*Serial.println("State: Warning");*/ break;
-    case 0x0C: /*Serial.println("State: Alarm");*/ break;
-    case 0x10: /*Serial.println("State: Walk in");*/ break;
+    case 0x04: current_status = "Normal"; break;
+    case 0x08: current_status = "Warning"; break;
+    case 0x0C: current_status = "Alarm"; break;
+    case 0x10: current_status = "Walk in"; break;
     default:
     Serial.print("[CAN][ERROR] Received unknown status code: 0x");
     Serial.println(status_code, HEX);
     return;
   }
   
-  oled_can.update_data(intake_temp, exhaust_temp, output_voltage, output_current, input_voltage);
+  oled_can.update_data(intake_temp, exhaust_temp, output_voltage, output_current, input_voltage, current_status);
 }

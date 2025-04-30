@@ -40,6 +40,7 @@
 > [!WARNING]
 > Please note that -48V is not connected to tranceiver or ESP32!
 
+### 2. Setup
 
 ## ESP-IDF Configuration
 
@@ -63,33 +64,32 @@ twai_timing_config_t t_config = TWAI_TIMING_CONFIG_125KBITS();
 twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 ```
 
-## Basic Communication Protocol
+## Commands via Serial
 
-The Flatpack2 CAN protocol:
-- Uses 125kbit/s baud rate
-- Uses extended ID field
-- Requires login message every 15 seconds
-- Sends status updates with voltage and current data
+Current project has the ability to control flatpack2 via serial:
 
-### Example Messages
+```sh
+echo -ne '<CTFP,SET,4320,100,5800>' >/dev/ttyUSB0
+echo -ne '<CTFP,DEF,5410>' >/dev/ttyUSB0
+```
 
-1. **Login to PSU (TX)**: `0x050048XX` where XX = ID * 4
-2. **Status Updates (RX)**: `0x05XX40YY` with current, voltage, temperature
-3. **Set Default Voltage (TX)**: `0x05XX9C00`
+- `<CTFP,` Start of message
+- `SET/DEF`: SET_OPERATION/DEFAULT_VOLTAGE
+- - `SET` requires VOLTAGE,CURRENT,PROTECTION
+- - `DEF` requires VOLTAGE
 
-Refer to the complete protocol documentation for detailed message structures.
+## Enable/Disable parts of code
 
-## Basic Implementation Steps
+`main.cpp` 
+```cpp
+#define OLED_ENABLED true # Enable/Disable OLED screen
+#define CAN_ENABLED true  # Enable/Disable CAN (loop() doesn't run)
+#define SCOM_ENABLED true # Enable/Disable Commands via Serial 
+```
 
-1. Initialize ESP32 TWAI (CAN) driver
-2. Send login message to PSU
-3. Read status messages
-4. Process alarms/warnings if necessary
-5. Send control commands as needed
-6. Re-send login message every ~10 seconds (before 15s timeout)
+### 3. Sources
 
-## Notes
-
-- The Flatpack2 will log out automatically after 15 seconds without a login message
-- All voltage values are in centivolts (48.52V = 4852)
-- All current values are in deciamps (21.2A = 212)
+Wouldn't have done anything without:
+- https://github.com/the6p4c/Flatpack2
+- https://github.com/taHC81/Eltek-Flatpack2-ESPhome
+- https://openinverter.org/forum/viewtopic.php?t=1351
