@@ -1,5 +1,7 @@
 # Flatpack2 CAN Controller using ESP32
 
+![image](oled-status-screen.jpg)
+
 ## Hardware Components
 
 - ESP32 Dev Board
