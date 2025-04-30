@@ -75,8 +75,9 @@ echo -ne '<CTFP,DEF,5410>' >/dev/ttyUSB0
 
 - `<CTFP,` Start of message
 - `SET/DEF`: SET_OPERATION/DEFAULT_VOLTAGE
-- - `SET` requires VOLTAGE,CURRENT,PROTECTION
-- - `DEF` requires VOLTAGE
+- - `SET` `VOLTAGE,CURRENT,PROTECTION`
+- - `DEF` `VOLTAGE`
+- `>` End of message
 
 ## Enable/Disable parts of code
 
